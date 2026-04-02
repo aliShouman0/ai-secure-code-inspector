@@ -1,0 +1,19 @@
+/OldVer
+
+# Virtual environment
+venv/
+
+# Target app (Juice Shop) — too large, cloned separately
+target/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Environment variables
+.env
+
+# OS files
+.DS_Store
+Thumbs.db
