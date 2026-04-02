@@ -3,8 +3,34 @@
 # Virtual environment
 venv/
 
-# Target app (Juice Shop) — too large, cloned separately
-target/
+# Ignore all of target/ except the 10 files used for scanning
+target/*
+!target/juice-shop/
+target/juice-shop/*
+!target/juice-shop/routes/
+!target/juice-shop/lib/
+!target/juice-shop/models/
+!target/juice-shop/frontend/
+target/juice-shop/routes/*
+!target/juice-shop/routes/login.ts
+!target/juice-shop/routes/search.ts
+!target/juice-shop/routes/fileUpload.ts
+!target/juice-shop/routes/changePassword.ts
+!target/juice-shop/routes/resetPassword.ts
+!target/juice-shop/routes/basket.ts
+!target/juice-shop/routes/order.ts
+target/juice-shop/lib/*
+!target/juice-shop/lib/insecurity.ts
+target/juice-shop/models/*
+!target/juice-shop/models/user.ts
+target/juice-shop/frontend/*
+!target/juice-shop/frontend/src/
+target/juice-shop/frontend/src/*
+!target/juice-shop/frontend/src/app/
+target/juice-shop/frontend/src/app/*
+!target/juice-shop/frontend/src/app/login/
+target/juice-shop/frontend/src/app/login/*
+!target/juice-shop/frontend/src/app/login/login.component.ts
 
 # Python cache
 __pycache__/
