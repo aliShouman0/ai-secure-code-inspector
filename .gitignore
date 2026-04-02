@@ -3,6 +3,7 @@
 # Virtual environment
 venv/
 
+
 # Ignore all of target/ except the 10 files used for scanning
 target/*
 !target/juice-shop/
