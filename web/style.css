@@ -1,0 +1,51 @@
+.sidebar {
+  background: #161b27;
+  min-height: calc(100vh - 56px);
+  border-right: 1px solid var(--bs-border-color);
+  padding: 1.2rem;
+}
+
+#log-box {
+  background: #0d1117;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 6px;
+  font-family: monospace;
+  font-size: 0.78rem;
+  color: #c9d1d9;
+  padding: 0.8rem;
+  min-height: 180px;
+  max-height: 320px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+}
+
+.scope-item { font-family: monospace; font-size: 0.75rem; color: #8892a4; }
+.scope-item::before { content: "• "; color: #4f8ef7; }
+
+.metric-value { font-size: 2.2rem; font-weight: 700; }
+.metric-label { font-size: 0.78rem; color: #8892a4; }
+
+/* Findings: native <details> instead of Bootstrap accordion */
+details {
+  border: 1px solid var(--bs-border-color);
+  border-radius: 6px;
+  margin-bottom: 0.5rem;
+}
+details[open] { border-color: #4a5568; }
+
+summary {
+  padding: 0.6rem 1rem;
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+summary::-webkit-details-marker { display: none; }
+
+.detail-body {
+  padding: 1rem;
+  border-top: 1px solid var(--bs-border-color);
+  font-size: 0.85rem;
+}
