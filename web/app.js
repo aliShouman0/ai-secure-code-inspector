@@ -21,7 +21,14 @@ function getCategoryColor(category) {
   return "#636e72"; // default gray
 }
 
-//Scope list : hide files when Test Mode is selected
+// Toggle between Juice Shop path and upload section
+$("input[name=source]").on("change", function () {
+  const isUpload = $(this).val() === "upload";
+  $("#path-section, #mode-section, #scope-list").toggleClass("d-none", isUpload);
+  $("#upload-section").toggleClass("d-none", !isUpload);
+});
+
+// Scope list: hide files when Test Mode is selected
 $("input[name=mode]").on("change", function () {
   const isTestMode = $(this).val() === "test";
   $("#scope-list .scope-item").each(function () {
@@ -40,14 +47,18 @@ $("#clear-btn").on("click", function () {
 
 //  Run Scan button
 $("#run-btn").on("click", function () {
-  const targetPath = $("#target-path").val().trim();
-  const scanMode   = $("input[name=mode]:checked").val();
-  const apiKey     = $("#api-key").val().trim();
-  const fileCount  = scanMode === "full" ? 10 : 3;
+  const source  = $("input[name=source]:checked").val();
+  const apiKey  = $("#api-key").val().trim();
 
   if (!apiKey) {
     alert("Please enter your Anthropic API key before running a scan.");
     $("#api-key").focus();
+    return;
+  }
+
+  if (source === "upload" && $("#upload-input")[0].files.length === 0) {
+    alert("Please select at least one file to upload.");
+    $("#upload-input").focus();
     return;
   }
 
@@ -62,6 +73,42 @@ $("#run-btn").on("click", function () {
     .addClass("bg-primary progress-bar-animated");
   $("#run-btn").prop("disabled", true);
 
+  // If upload mode: POST files first, then start SSE with returned path
+  if (source === "upload") {
+    const formData = new FormData();
+    $.each($("#upload-input")[0].files, function (_i, file) {
+      formData.append("files", file);
+    });
+    $("#upload-status").text("⬆️ Uploading files...");
+    appendLog("⬆️ Uploading files...");
+
+    $.ajax({
+      url: "/upload",
+      type: "POST",
+      data: formData,
+      processData: false,
+      contentType: false,
+      success: function (res) {
+        $("#upload-status").text(`✅ ${res.files.length} file(s) uploaded`);
+        appendLog(`✅ Uploaded: ${res.files.join(", ")}`);
+        startScan(res.path, "upload", apiKey, res.files.length);
+      },
+      error: function () {
+        appendLog("❌ Upload failed.");
+        $("#run-btn").prop("disabled", false);
+      }
+    });
+    return;
+  }
+
+  // Juice Shop path mode
+  const targetPath = $("#target-path").val().trim();
+  const scanMode   = $("input[name=mode]:checked").val();
+  const fileCount  = scanMode === "full" ? 10 : 3;
+  startScan(targetPath, scanMode, apiKey, fileCount);
+});
+
+function startScan(targetPath, scanMode, apiKey, fileCount) {
   //  Open SSE stream — Flask will push events as files are analyzed
   const eventSource = new EventSource(
     `/scan?path=${encodeURIComponent(targetPath)}&mode=${scanMode}&key=${encodeURIComponent(apiKey)}`,
@@ -102,7 +149,7 @@ $("#run-btn").on("click", function () {
     eventSource.close();
     $("#run-btn").prop("disabled", false);
   };
-});
+}
 
 
 

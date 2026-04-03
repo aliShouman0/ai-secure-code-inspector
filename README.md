@@ -7,7 +7,7 @@ Uses Claude AI to detect security vulnerabilities in OWASP Juice Shop, mapped to
 
 ## What it does
 
-The tool scans a fixed set of 10 files from Juice Shop. For each file, the code is chunked and sent to Claude using three different prompt strategies (role + constraints, few-shot examples, and a verification pass). Results are saved as a structured JSON report and a readable markdown file. There's a CLI for quick runs and a Flask web UI if you prefer a browser.
+The tool scans a fixed set of 10 files from Juice Shop, or any files you upload yourself. For each file, the code is chunked and sent to Claude using three prompt strategies (role + constraints, few-shot examples, and a verification pass). Results are saved as a structured JSON report and a readable markdown file. There's a CLI for quick runs and a Flask web UI if you prefer a browser.
 
 It was also compared against Semgrep OSS to validate the findings — see `comparison.md`.
 
@@ -22,6 +22,7 @@ ai-secure-code-inspector/
 ├── prompt_log.md         # prompt versions and why each change was made
 ├── comparison.md         # AI tool vs Semgrep results
 ├── requirements.txt
+├── .env.example          # API key template
 ├── downloads/
 │   ├── report.json       # structured output (file, line, OWASP, fix, confidence)
 │   └── report.md         # human-readable report
@@ -34,7 +35,7 @@ ai-secure-code-inspector/
 │   ├── app.js
 │   └── style.css
 └── target/
-    └── juice-shop/       # cloned separately, not tracked in git
+    └── juice-shop/       # 10 scoped files — already in the repo
 ```
 
 ---
@@ -43,7 +44,6 @@ ai-secure-code-inspector/
 
 - Python 3.12+
 - Anthropic API key — get one at https://console.anthropic.com
-- Juice Shop cloned into `target/juice-shop/` (step 2 below)
 - Semgrep is only needed if you want to re-run the baseline scan
 
 ---
@@ -52,29 +52,32 @@ ai-secure-code-inspector/
 
 **1. Clone this repo**
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/aliShouman0/ai-secure-code-inspector
 cd ai-secure-code-inspector
 ```
 
-**2. Clone Juice Shop**
-```bash
-mkdir target
-git clone https://github.com/juice-shop/juice-shop target/juice-shop
-```
+> The 10 Juice Shop files used for scanning are already included in the repo under `target/juice-shop/` — no need to clone Juice Shop separately.
 
-**3. Install dependencies**
+**2. Install dependencies**
 ```bash
 pip install -r requirements.txt
 ```
 
-**4. Set your API key**
-```bash
-# Windows PowerShell
-$env:ANTHROPIC_API_KEY = "sk-ant-..."
+**3. Set your API key**
 
-# Linux/Mac
-export ANTHROPIC_API_KEY="sk-ant-..."
+Copy the example file and fill in your key:
+```bash
+cp .env.example .env
 ```
+
+Then edit `.env`:
+```
+ANTHROPIC_API_KEY=sk-ant-...
+```
+
+Get your key at https://console.anthropic.com → API Keys.
+
+> If you're using the web UI, you can also just paste the key directly in the sidebar — no `.env` needed.
 
 ---
 
@@ -91,10 +94,22 @@ python web/web_ui.py
 ```
 Then open http://localhost:5000
 
-**Test mode** (3 files only, much cheaper to try):
+**Test mode** (3 files only, much cheaper to try first):
 ```bash
 python inspector.py --target "target/juice-shop" --test
 ```
+
+---
+
+## Web UI — scanning your own files
+
+The web UI has two modes you can switch between in the sidebar:
+
+**Juice Shop (fixed scope)** — scans the 10 pre-selected files in `target/juice-shop/`. Choose Full Scan (all 10) or Test Mode (3 files).
+
+**Upload files** — upload any source files from your machine (.ts, .js, .py, .php, .java, .go, .rb). The tool will scan whatever you upload and apply the same prompt pipeline. Files are deleted from the server after the scan finishes.
+
+In both cases, paste your Anthropic API key in the sidebar field before clicking Run Scan. The key is used only for that request and never stored.
 
 ---
 
@@ -104,6 +119,8 @@ After a scan, two files are written to `downloads/`:
 
 - `report.json` — each finding includes: file, line, OWASP category, risk summary, suggested fix, and confidence score
 - `report.md` — same content but formatted for reading
+
+Both files can be downloaded directly from the web UI after a scan.
 
 ---
 

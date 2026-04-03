@@ -192,8 +192,6 @@ def save_markdown(findings: list, path: str = "report.md"):
     lines = [
         "# AI Secure Code Inspector — Vulnerability Report",
         "",
-        "**Target:** OWASP Juice Shop  ",
-        "**Scope:** 10 files (routes, lib, models, frontend)  ",
         f"**Total verified findings:** {len(findings)}  ",
         "",
         "---",

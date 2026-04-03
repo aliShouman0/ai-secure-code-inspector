@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="dark">
 <head>
-  
+
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>AI Secure Code Inspector</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
@@ -20,12 +20,35 @@
     <aside class="col-md-3 col-lg-2 sidebar">
       <h6 class="text-uppercase text-muted small fw-bold mb-3">⚙️ Configuration</h6>
 
+      <!-- Source toggle -->
       <div class="mb-3">
-        <label class="form-label small">Juice Shop Path</label>
-        <input type="text" id="target-path" class="form-control form-control-sm" value="../target/juice-shop" />
+        <label class="form-label small">Source</label>
+        <div class="form-check">
+          <input class="form-check-input" type="radio" name="source" id="source-path" value="path" checked />
+          <label class="form-check-label small" for="source-path">Juice Shop (fixed scope)</label>
+        </div>
+        <div class="form-check">
+          <input class="form-check-input" type="radio" name="source" id="source-upload" value="upload" />
+          <label class="form-check-label small" for="source-upload">Upload files</label>
+        </div>
       </div>
 
-      <div class="mb-3">
+      <!-- Juice Shop path -->
+      <div class="mb-3" id="path-section">
+        <label class="form-label small">Juice Shop Path</label>
+        <input type="text" id="target-path" class="form-control form-control-sm" value="target/juice-shop" />
+      </div>
+
+      <!-- Upload section -->
+      <div class="mb-3 d-none" id="upload-section">
+        <label class="form-label small">Upload Files</label>
+        <input type="file" id="upload-input" class="form-control form-control-sm" multiple accept=".ts,.js,.py,.php,.java,.go,.rb" />
+        <div class="form-text small text-muted">Select one or more source files to scan.</div>
+        <div id="upload-status" class="small mt-1"></div>
+      </div>
+
+      <!-- Scan mode (only for Juice Shop) -->
+      <div class="mb-3" id="mode-section">
         <label class="form-label small">Scan Mode</label>
         <div class="form-check">
           <input class="form-check-input" type="radio" name="mode" id="mode-full" value="full" checked />
@@ -65,9 +88,9 @@
           <p class="text-muted">Configure your scan in the sidebar and click <strong>▶ Run Scan</strong> to start.</p>
           <strong>What this tool does:</strong>
           <ul class="text-muted mb-0 mt-1">
-            <li>Analyzes 10 key files from OWASP Juice Shop</li>
-            <li>Uses Claude AI with 3 prompt engineering strategies</li>
-            <li>Maps every finding to OWASP Top 10 </li>
+            <li>Analyzes source files using Claude AI</li>
+            <li>Uses 3 prompt engineering strategies</li>
+            <li>Maps every finding to OWASP Top 10</li>
             <li>Runs a verification pass to remove false positives</li>
             <li>Outputs <code>report.json</code> and <code>report.md</code></li>
           </ul>

@@ -33,6 +33,9 @@ target/juice-shop/frontend/src/app/*
 target/juice-shop/frontend/src/app/login/*
 !target/juice-shop/frontend/src/app/login/login.component.ts
 
+# Temp upload folder (created at runtime, not needed in repo)
+uploads/
+
 # Python cache
 __pycache__/
 *.pyc
