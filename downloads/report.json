@@ -1,253 +1,37 @@
 {
-  "total": 31,
+  "total": 4,
   "findings": [
     {
-      "file": "routes/login.ts",
-      "line_range": "24",
-      "owasp_category": "A03 - Injection",
-      "risk_summary": "User input from req.body.email is concatenated directly into a SQL query without parameterization. An attacker can inject SQL syntax (e.g., ' OR '1'='1) to bypass authentication, enumerate users, or extract sensitive data from the database.",
-      "fix": "Replace the raw SQL query with parameterized queries using Sequelize's where clause: models.sequelize.query('SELECT * FROM Users WHERE email = ? AND password = ? AND deletedAt IS NULL', { replacements: [req.body.email || '', security.hash(req.body.password || '')], model: UserModel, plain: true })",
-      "confidence": 0.98
-    },
-    {
-      "file": "routes/search.ts",
-      "line_range": "18-19",
-      "owasp_category": "A03 - Injection",
-      "risk_summary": "User input from req.query.q is concatenated directly into a SQL query without parameterization or prepared statements. An attacker can inject SQL syntax (e.g., UNION SELECT, OR 1=1) to bypass the search logic, extract sensitive data, or modify database contents.",
-      "fix": "Use parameterized queries with placeholders: models.sequelize.query('SELECT * FROM Products WHERE ((name LIKE ? OR description LIKE ?) AND deletedAt IS NULL) ORDER BY name', { replacements: [`%${criteria}%`, `%${criteria}%`], type: QueryTypes.SELECT })",
-      "confidence": 0.99
-    },
-    {
-      "file": "routes/fileUpload.ts",
-      "line_range": "29-50",
-      "owasp_category": "A01 - Broken Access Control",
-      "risk_summary": "Path traversal vulnerability in ZIP file extraction. The code checks if the absolute path includes the current directory, but an attacker can use ZIP entries with path traversal sequences (e.g., '../../../etc/passwd') to write files outside the intended 'uploads/complaints/' directory. The path.resolve() check is insufficient because it resolves relative to the current working directory, not the uploads directory.",
-      "fix": "Validate that the resolved absolute path is within the target directory before extraction. Use: const targetDir = path.resolve('uploads/complaints/'); if (!absolutePath.startsWith(targetDir)) { entry.autodrain(); return; }. Additionally, sanitize fileName by removing path traversal sequences.",
-      "confidence": 0.92
-    },
-    {
-      "file": "routes/fileUpload.ts",
-      "line_range": "1-10",
-      "owasp_category": "A03 - Injection",
-      "risk_summary": "XML External Entity (XXE) injection vulnerability. The code parses user-supplied XML files using libxmljs without disabling external entity resolution. The XML parser is configured with noent: true (process entity declarations), which enables XXE attacks. An attacker can upload a malicious XML file with XXE payloads to read arbitrary files from the server, perform SSRF attacks, or cause denial of service.",
-      "fix": "Disable external entity processing entirely. Use: libxml.parseXml(data, { noblanks: true, nocdata: true, noent: false, dtdload: false }). Remove the noent: true flag and consider using a hardened XML parser that disables external entities by default.",
-      "confidence": 0.94
-    },
-    {
-      "file": "routes/fileUpload.ts",
-      "line_range": "1-15",
-      "owasp_category": "A08 - Software & Data Integrity Failures",
-      "risk_summary": "Untrusted file content is deserialized using yaml.load() without safe mode. An attacker can upload a malicious YAML file containing arbitrary code execution payloads (e.g., JavaScript objects that execute during deserialization). This bypasses the timeout protection since the payload executes during parsing.",
-      "fix": "Use yaml.safeLoad() instead of yaml.load(): vm.runInContext('JSON.stringify(yaml.safeLoad(data))', sandbox, { timeout: 2000 }). This prevents instantiation of arbitrary JavaScript objects during deserialization.",
-      "confidence": 0.92
-    },
-    {
-      "file": "routes/changePassword.ts",
-      "line_range": "12-16",
+      "file": "login.component.ts",
+      "line_range": "63-64",
       "owasp_category": "A07 - Identification & Auth Failures",
-      "risk_summary": "Password parameters are extracted from the query string instead of the request body. Query parameters are logged in server logs, browser history, and proxy logs, exposing sensitive password data in plaintext. An attacker with access to logs can recover user passwords.",
-      "fix": "Move password extraction from query parameters to the request body: const currentPassword = req.body.current; const newPassword = req.body.new; const repeatPassword = req.body.repeat. Use POST or PUT method with JSON body instead of GET with query strings.",
-      "confidence": 0.92
-    },
-    {
-      "file": "routes/resetPassword.ts",
-      "line_range": "29-31",
-      "owasp_category": "A02 - Cryptographic Failures",
-      "risk_summary": "The password is stored directly in the database without any hashing. The code calls user.update({ password: newPassword }) with plaintext password. An attacker with database access can read all user passwords in plaintext, and any data breach exposes credentials.",
-      "fix": "Hash the password before storing: use a bcrypt or argon2 library to hash newPassword before passing it to user.update(). Example: const hashedPassword = await bcrypt.hash(newPassword, 10); user.update({ password: hashedPassword })",
-      "confidence": 0.93
-    },
-    {
-      "file": "routes/resetPassword.ts",
-      "line_range": "18-33",
-      "owasp_category": "A01 - Broken Access Control",
-      "risk_summary": "There is no authorization check verifying that the requesting user is resetting their own password. An attacker can reset any user's password by providing their email and guessing/brute-forcing the security answer, without any authentication of the requester's identity.",
-      "fix": "Add a check to ensure the user is authenticated and owns the email being reset: if (!req.user || req.user.email !== email) return res.status(403).send('Forbidden'). Alternatively, require the user to be logged in and only allow resetting their own account.",
-      "confidence": 0.89
-    },
-    {
-      "file": "routes/resetPassword.ts",
-      "line_range": "1-5",
-      "owasp_category": "A07 - Identification & Auth Failures",
-      "risk_summary": "The password reset logic validates only a user ID and a security answer without rate limiting or account lockout mechanisms. An attacker can brute force the security answer across multiple attempts to reset any user's password.",
-      "fix": "Implement rate limiting on failed security question attempts (e.g., max 3 attempts per 15 minutes), account lockout after threshold, and CAPTCHA after 2 failed attempts. Log all reset attempts with timestamps.",
-      "confidence": 0.82
-    },
-    {
-      "file": "routes/basket.ts",
-      "line_range": "14-16",
-      "owasp_category": "A01 - Broken Access Control",
-      "risk_summary": "The retrieveBasket endpoint retrieves a basket by ID from the URL parameter without verifying that the authenticated user owns the basket. An attacker can access any other user's basket by manipulating the ID parameter, bypassing the authorization check entirely.",
-      "fix": "Add an authorization check before returning the basket: verify that the authenticated user's basket ID (user.bid) matches the requested ID. Example: if (user?.bid !== parseInt(id, 10)) { return res.status(403).json({ error: 'Unauthorized' }); }",
-      "confidence": 0.92
-    },
-    {
-      "file": "routes/order.ts",
-      "line_range": "31-32",
-      "owasp_category": "A01 - Broken Access Control",
-      "risk_summary": "The placeOrder function retrieves a basket by ID from req.params.id without verifying that the authenticated user owns that basket. An attacker can place orders for arbitrary baskets by manipulating the ID parameter, accessing and modifying other users' orders.",
-      "fix": "Add an authorization check after retrieving the basket to verify ownership: if (basket.UserId !== customer.id) { return res.status(403).json({ error: 'Forbidden' }); }",
-      "confidence": 0.92
-    },
-    {
-      "file": "routes/order.ts",
-      "line_range": "35-36",
-      "owasp_category": "A04 - Insecure Design",
-      "risk_summary": "The order ID is generated using a hash of the customer email (first 4 chars) concatenated with a random hex string. This provides insufficient entropy and predictability\u2014an attacker can potentially guess or forge order IDs for other customers since the email hash prefix greatly reduces the keyspace.",
-      "fix": "Generate order IDs using a cryptographically secure random method with sufficient entropy: const orderId = require('crypto').randomBytes(8).toString('hex'); Do not use user-controlled data like email in ID generation.",
-      "confidence": 0.85
-    },
-    {
-      "file": "routes/order.ts",
-      "line_range": "38-39",
-      "owasp_category": "A01 - Broken Access Control",
-      "risk_summary": "The PDF file is written directly to the 'ftp/' directory using an order ID that is partially predictable. An attacker who can predict order IDs can access other users' order PDFs by guessing filenames, and the 'ftp/' directory may be web-accessible.",
-      "fix": "Store generated PDFs outside the web root with proper access controls. Serve PDFs only after verifying the requesting user owns the order. Use a UUID or cryptographically secure random ID instead of the predictable orderId.",
+      "risk_summary": "Hardcoded test credentials (testing@juice-sh.op / IamUsedForTesting) are exposed in production source code. An attacker with access to the source code can use these credentials to gain unauthorized access to test accounts.",
+      "fix": "Remove hardcoded test credentials from production code. Store test credentials in secure configuration only available in development/testing environments, not in source control.",
       "confidence": 0.88
     },
     {
-      "file": "routes/order.ts",
-      "line_range": "1-50",
-      "owasp_category": "A01 - Broken Access Control",
-      "risk_summary": "The code uses req.body.UserId directly without verifying that the authenticated user matches the UserId being processed. An attacker can modify req.body.UserId to perform wallet operations (debit/credit) on arbitrary user accounts, allowing theft of funds or unauthorized bonus points allocation.",
-      "fix": "Verify that the authenticated user's ID matches the UserId being processed before any wallet operations. Add a check like: if (req.user.id !== req.body.UserId) return res.status(403).send('Forbidden')",
-      "confidence": 0.92
-    },
-    {
-      "file": "routes/order.ts",
-      "line_range": "35-45",
-      "owasp_category": "A04 - Insecure Design",
-      "risk_summary": "The wallet balance check and decrement operations lack transactional atomicity. Between the balance check (wallet.balance >= totalPrice) and the decrement operation, a race condition allows an attacker to place multiple simultaneous orders that each pass the balance check but collectively overdraft the wallet.",
-      "fix": "Use database transactions to atomically check and decrement the wallet balance in a single operation, preventing race conditions. Alternatively, use database-level constraints or row-level locking.",
+      "file": "login.component.ts",
+      "line_range": "25-26",
+      "owasp_category": "A02 - Cryptographic Failures",
+      "risk_summary": "Authentication tokens are stored in localStorage, which is vulnerable to XSS attacks. Any JavaScript running on the page can steal the token. Additionally, localStorage persists across browser sessions and tabs, increasing the attack surface compared to session-only storage.",
+      "fix": "Store authentication tokens only in httpOnly, secure cookies set by the server. Remove localStorage.setItem('token', ...) and rely solely on secure cookie-based session management. If localStorage must be used, implement strong Content Security Policy and input validation to prevent XSS.",
       "confidence": 0.88
     },
     {
-      "file": "routes/order.ts",
-      "line_range": "17-27",
+      "file": "login.component.ts",
+      "line_range": "28-29",
       "owasp_category": "A02 - Cryptographic Failures",
-      "risk_summary": "Coupon validation uses client-supplied Base64-encoded data (req.body.couponData) without cryptographic verification. An attacker can forge arbitrary coupon codes and discount values by Base64-encoding malicious couponData, then base64 decoding and string splitting to extract coupon codes and dates that match hardcoded campaigns in the system.",
-      "fix": "Implement server-side coupon validation using cryptographic signatures (HMAC or digital signatures). Store coupon validation state server-side and do not trust client-supplied couponData. Example: Use a signed JWT or HMAC-SHA256 digest appended to the coupon data that can be verified server-side before applying discounts.",
-      "confidence": 0.93
-    },
-    {
-      "file": "routes/order.ts",
-      "line_range": "23-26",
-      "owasp_category": "A04 - Insecure Design",
-      "risk_summary": "The coupon validation relies on a loose equality check (==) comparing couponDate with campaign.validOn. An attacker can bypass date validation by sending a couponDate that numerically equals a past campaign's validOn timestamp, allowing expired coupons to be applied. Server-side date validation is missing, trusting only client-supplied timestamps.",
-      "fix": "Replace loose equality with strict equality (===) and add server-side date validation: ensure the coupon is only valid within the current valid date window. Validate that the current server time falls within the coupon's active period on the backend.",
-      "confidence": 0.82
-    },
-    {
-      "file": "lib/insecurity.ts",
-      "line_range": "19",
-      "owasp_category": "A02 - Cryptographic Failures",
-      "risk_summary": "A hardcoded RSA private key is embedded directly in source code. If this repository or compiled code is exposed, an attacker can forge any JWT tokens and impersonate any user in the system with complete access.",
-      "fix": "Load the private key from a secure environment variable or key management service instead of hardcoding it: const privateKey = process.env.JWT_PRIVATE_KEY",
-      "confidence": 0.98
-    },
-    {
-      "file": "lib/insecurity.ts",
-      "line_range": "32",
-      "owasp_category": "A02 - Cryptographic Failures",
-      "risk_summary": "The hash function uses MD5, which is cryptographically broken. An attacker can easily generate collisions or precompute rainbow tables to crack password hashes or other hashed values.",
-      "fix": "Replace MD5 with a modern hashing algorithm: crypto.createHash('sha256').update(data).digest('hex') or use bcrypt/argon2 for password hashing.",
-      "confidence": 0.92
-    },
-    {
-      "file": "lib/insecurity.ts",
-      "line_range": "33",
-      "owasp_category": "A02 - Cryptographic Failures",
-      "risk_summary": "The HMAC function uses a hardcoded static key 'pa4qacea4VK9t9nGv7yZtwmj' embedded in source code. If exposed, attackers can forge valid HMACs and bypass message integrity checks.",
-      "fix": "Load the HMAC key from a secure environment variable: crypto.createHmac('sha256', process.env.HMAC_SECRET || '').update(data).digest('hex')",
-      "confidence": 0.94
-    },
-    {
-      "file": "lib/insecurity.ts",
-      "line_range": "48-56",
-      "owasp_category": "A01 - Broken Access Control",
-      "risk_summary": "The isRedirectAllowed function uses string.includes() to validate redirect URLs, which allows bypass through URL prefix matching. An attacker can redirect to a malicious URL like 'https://attacker.com?url=https://github.com/juice-shop/juice-shop' since the allowlist entry is a substring match.",
-      "fix": "Use exact URL matching or parse the URL properly: redirectAllowlist.has(url) with a Set of exact URLs, or validate the hostname separately using new URL(url).hostname",
-      "confidence": 0.89
-    },
-    {
-      "file": "lib/insecurity.ts",
-      "line_range": "14-18",
-      "owasp_category": "A01 - Broken Access Control",
-      "risk_summary": "The appendUserId middleware directly accesses authenticatedUsers.tokenMap without validating that the token exists or belongs to the current request. If a token is not in the map or has been invalidated, req.body.UserId may be left undefined, allowing subsequent authorization checks to be bypassed.",
-      "fix": "Add explicit validation: const user = authenticatedUsers.tokenMap[utils.jwtFrom(req)]; if (!user || !user.data || !user.data.id) { return res.status(401).json({...}); } req.body.UserId = user.data.id;",
-      "confidence": 0.82
-    },
-    {
-      "file": "lib/insecurity.ts",
-      "line_range": "21-31",
-      "owasp_category": "A07 - Identification & Auth Failures",
-      "risk_summary": "The updateAuthenticatedUsers middleware uses jwt.verify with a callback but does not validate the decoded token structure before storing it, and always calls next() regardless of verification result. This allows unauthenticated or malformed requests to proceed.",
-      "fix": "Check verification result and token structure: jwt.verify(token, publicKey, (err, decoded) => { if (err === null && decoded && decoded.data && decoded.data.id) { authenticatedUsers.put(token, decoded); next(); } else { return res.status(401).json({...}); } });",
+      "risk_summary": "A temporary token for 2FA is stored in localStorage (totp_tmp_token). This temporary token is vulnerable to XSS theft and should not be stored in a location accessible to JavaScript. An attacker stealing this token could bypass 2FA.",
+      "fix": "Store the temporary 2FA token in an httpOnly, secure cookie instead of localStorage. Update line 39: this.cookieService.put('totp_tmp_token', error.data.tmpToken, { httpOnly: true, secure: true, expires }) and retrieve from cookies in the 2FA component.",
       "confidence": 0.85
     },
     {
-      "file": "frontend/src/app/login/login.component.ts",
-      "line_range": "58-59",
-      "owasp_category": "A05 - Security Misconfiguration",
-      "risk_summary": "Hardcoded Google OAuth client ID is exposed in the source code. This credential can be extracted from the compiled JavaScript and potentially misused, though impact is limited since OAuth client IDs are semi-public by design.",
-      "fix": "Move the clientId to a backend configuration endpoint or environment-specific configuration file rather than hardcoding in client-side source code.",
-      "confidence": 0.72
-    },
-    {
-      "file": "frontend/src/app/login/login.component.ts",
-      "line_range": "61-62",
-      "owasp_category": "A07 - Identification & Auth Failures",
-      "risk_summary": "Hardcoded test credentials (testingUsername and testingPassword) are exposed in the production source code. An attacker can extract these credentials and use them to gain unauthorized access to the application as a test user account.",
-      "fix": "Remove hardcoded test credentials from the source code. If test accounts are needed, manage them through a secure configuration system that is not deployed to production. Use environment-specific builds to exclude test credentials from production deployments.",
-      "confidence": 0.93
-    },
-    {
-      "file": "frontend/src/app/login/login.component.ts",
-      "line_range": "20-22",
+      "file": "login.component.ts",
+      "line_range": "30",
       "owasp_category": "A01 - Broken Access Control",
-      "risk_summary": "The redirectUri is used directly in a URL construction for OAuth without sufficient validation. An attacker could manipulate the authorizedRedirect response to inject a malicious URI, causing the user's browser to redirect to an attacker-controlled domain and potentially stealing the OAuth token.",
-      "fix": "Validate that redirectUri matches a strict whitelist of expected domains before use. Implement URL parsing and validation: const url = new URL(this.redirectUri); if (!['trusted-domain.com'].includes(url.hostname)) { throw new Error('Invalid redirect'); }",
-      "confidence": 0.78
-    },
-    {
-      "file": "frontend/src/app/login/login.component.ts",
-      "line_range": "42-43",
-      "owasp_category": "A02 - Cryptographic Failures",
-      "risk_summary": "Authentication tokens are stored in localStorage, which is vulnerable to XSS attacks. If an attacker injects malicious JavaScript, they can steal the token from localStorage. Additionally, storing sensitive tokens in localStorage provides no protection against XSS.",
-      "fix": "Store authentication tokens in httpOnly, secure cookies instead of localStorage. Remove the localStorage.setItem('token', ...) call and rely only on the secure cookie set by this.cookieService.put() with httpOnly flag enabled on the server.",
-      "confidence": 0.89
-    },
-    {
-      "file": "frontend/src/app/login/login.component.ts",
-      "line_range": "47",
-      "owasp_category": "A02 - Cryptographic Failures",
-      "risk_summary": "A temporary OAuth token is stored in localStorage (totp_tmp_token) during 2FA flow. This temporary token is vulnerable to XSS theft and should not be stored in localStorage where JavaScript can access it.",
-      "fix": "Store the temporary token in a secure httpOnly cookie or in memory only, not in localStorage. If a cookie is used, ensure the httpOnly and secure flags are set server-side.",
-      "confidence": 0.85
-    },
-    {
-      "file": "frontend/src/app/login/login.component.ts",
-      "line_range": "58",
-      "owasp_category": "A02 - Cryptographic Failures",
-      "risk_summary": "The remember-me feature stores the user's email address in localStorage in plaintext. An attacker with access to the device or via XSS can retrieve and misuse the email address.",
-      "fix": "Do not store email addresses in localStorage. If remember-me functionality is required, use a secure, signed token stored in an httpOnly cookie instead.",
-      "confidence": 0.75
-    },
-    {
-      "file": "models/user.ts",
-      "line_range": "56-59",
-      "owasp_category": "A07 - Identification & Auth Failures",
-      "risk_summary": "The password hashing function is called without verifying password strength or enforcing complexity requirements. An attacker can register with weak passwords like '123' or 'password', making brute-force attacks feasible. The code comment references 'weakPasswordChallenge', suggesting this is a known vulnerability.",
-      "fix": "Implement password strength validation before hashing. Enforce minimum length (12+ characters), complexity requirements (uppercase, lowercase, numbers, symbols), and reject common weak passwords: if (!isStrongPassword(clearTextPassword)) throw new Error('Password too weak'); this.setDataValue('password', security.hash(clearTextPassword))",
-      "confidence": 0.78
-    },
-    {
-      "file": "models/user.ts",
-      "line_range": "1-20",
-      "owasp_category": "A01 - Broken Access Control",
-      "risk_summary": "The role field accepts values from a hardcoded allowlist via the `isIn` validator, but there is no authorization check preventing a user from setting their own role to 'admin' during account creation or update. An attacker can directly manipulate the role assignment to grant themselves administrative privileges.",
-      "fix": "Remove the ability for users to set their own role. Role assignment should only be performed by authorized administrators through a separate, protected endpoint with proper authorization checks. Use a custom validator that enforces role immutability or restrict role changes to admin-only operations.",
-      "confidence": 0.82
+      "risk_summary": "The basket ID (bid) is stored in sessionStorage without encryption or integrity protection. If an attacker can modify sessionStorage via XSS, they can manipulate the bid to access or modify another user's basket.",
+      "fix": "Store the bid in a secure, httpOnly cookie managed by the server instead of sessionStorage. Remove sessionStorage.setItem('bid', ...) and rely on server-side session management to track the user's basket.",
+      "confidence": 0.79
     }
   ]
 }
